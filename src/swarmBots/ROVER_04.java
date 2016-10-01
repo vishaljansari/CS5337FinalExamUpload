@@ -201,12 +201,27 @@ public class ROVER_04 {
                         
                     for (int i = 0; i < 6 ; i++) {
                         
+                        scanMapTiles=getScanMapTiles();
+                        dir=generateRandomDirection();
+                        setDirection(dir);
+                        moveRover(scanMapTiles, centerIndex);
+                        blocked = Boolean.FALSE;
+                        blockedByRover = Boolean.FALSE;
+                        Thread.sleep(sleepTime);
+                        currentLoc=getCurrentLoaction();
+                        scanMapTiles =getScanMapTiles();
                         
                         }
                     }else {
                         
                 
                     
+                    if(blocked==Boolean.FALSE && blockedByRover==Boolean.FALSE){
+                        getTargetDirection(currentLoc, targetLocation);
+                        moveRover(scanMapTiles,centerIndex);
+                    }    
+                    currentLoc=getCurrentLoaction();
+                    scanMapTiles=getScanMapTiles();
                     
                     if(currentLoc.xpos==targetLocation.xpos && currentLoc.ypos==targetLocation.ypos)
                     {
@@ -261,6 +276,15 @@ public class ROVER_04 {
         east=Boolean.FALSE;
         south=Boolean.FALSE;
         west=Boolean.FALSE;
+        
+        if(checkNorthDirection(scanMapTiles, x, x))
+            north=Boolean.TRUE;
+        if(checkEastDirection(scanMapTiles, x, x))
+            east=Boolean.TRUE;
+        if(checkSouthDirection(scanMapTiles, x, x))
+            south=Boolean.TRUE;
+        if(checkWestDirection(scanMapTiles, x, x))
+            west=Boolean.TRUE;
         
         if(north)
             setDirection("N");
