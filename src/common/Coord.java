@@ -9,14 +9,6 @@ public class Coord {
 	public final int xpos;
 	public final int ypos;
 	
-	public int getXpos() {
-		return xpos;
-	}
-
-	public int getYpos() {
-		return ypos;
-	}
-
 	@Override
 	public String toString() {
 		return "Coord [xpos=" + xpos + ", ypos=" + ypos + "]";
