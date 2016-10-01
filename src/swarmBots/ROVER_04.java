@@ -13,10 +13,14 @@ import java.util.Random;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+//import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import common.Coord;
 import common.MapTile;
 import common.ScanMap;
+import enums.RoverDriveType;
+import enums.RoverToolType;
+import enums.Science;
 import enums.Terrain;
 
 /**
@@ -31,10 +35,22 @@ public class ROVER_04 {
 	PrintWriter out;
 	String rovername;
 	ScanMap scanMap;
-	int sleepTime;
-	String SERVER_ADDRESS = "localhost";
+	int sleepTime=150;
+	String SERVER_ADDRESS = "localhost";//"192.168.1.106";
 	static final int PORT_ADDRESS = 9537;
-	String[] cardinals = new String[4];
+	
+	
+	boolean goingSouth = false,traverseJackpot=Boolean.FALSE;
+	boolean goingEast = false;
+	boolean goingWest = false;
+	boolean goingNorth = false;
+	boolean goingHorizontal = false;
+	boolean blocked = false;
+	boolean blockedByRover = false;
+	
+	
+	
+
 
 	public ROVER_04() {
 		// constructor
@@ -42,7 +58,7 @@ public class ROVER_04 {
 		rovername = "ROVER_04";
 		SERVER_ADDRESS = "localhost";
 		// this should be a safe but slow timer value
-		sleepTime = 300; // in milliseconds - smaller is faster, but the server will cut connection if it is too small
+		sleepTime = 200; // in milliseconds - smaller is faster, but the server will cut connection if it is too small
 	}
 	
 	public ROVER_04(String serverAddress) {
@@ -65,8 +81,7 @@ public class ROVER_04 {
 
 			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			out = new PrintWriter(socket.getOutputStream(), true);
-			
-	
+	 
 			// Process all messages from server, wait until server requests Rover ID
 			// name - Return Rover Name to complete connection
 			while (true) {
@@ -104,6 +119,7 @@ public class ROVER_04 {
             }
 			if (line.startsWith("START_LOC")) {
 				rovergroupStartPosition = extractLocationFromString(line);
+				
 			}
 			System.out.println(rovername + " START_LOC " + rovergroupStartPosition);
 			
@@ -119,13 +135,14 @@ public class ROVER_04 {
 				targetLocation = extractLocationFromString(line);
 			}
 			System.out.println(rovername + " TARGET_LOC " + targetLocation);
-				
-			boolean goingSouth = false;
+			
+			
+
 			boolean stuck = false; // just means it did not change locations between requests,
 									// could be velocity limit or obstruction etc.
-			boolean blocked = false;
+			blocked = false;
 	
-		//	String[] cardinals = new String[4];
+			String[] cardinals = new String[4];
 			cardinals[0] = "N";
 			cardinals[1] = "E";
 			cardinals[2] = "S";
@@ -134,39 +151,23 @@ public class ROVER_04 {
 			String currentDir = cardinals[0];
 			Coord currentLoc = null;
 			Coord previousLoc = null;
-			int stepCount = 0;
-	
-
+			
+			String dir;
 			/**
 			 *  ####  Rover controller process loop  ####
 			 */
 			while (true) {
-	
 				
-				// **** Request Rover Location from SwarmServer ****
-				out.println("LOC");
-				line = in.readLine();
-	            if (line == null) {
-	            	System.out.println(rovername + " check connection to server");
-	            	line = "";
-	            }
-				if (line.startsWith("LOC")) {
-					// loc = line.substring(4);
-					currentLoc = extractLocationFromString(line);
+				currentLoc = getCurrentLoaction();
 					
-				}
-				System.out.println(rovername + " currentLoc at start: " + currentLoc);
-				
 				// after getting location set previous equal current to be able to check for stuckness and blocked later
 				previousLoc = currentLoc;		
-							// ***** do a SCAN *****
-
-				// gets the scanMap from the server based on the Rover current location
-				doScan(); 
-				// prints the scanMap to the Console output for debug purposes
-				scanMap.debugPrintMap();
-				MapTile[][] scanMapTiles = scanMap.getScanMap();
+							
+				
+				// tile S = y + 1; N = y - 1; E = x + 1; W = x - 1
+				MapTile[][] scanMapTiles =getScanMapTiles();
 				int centerIndex = (scanMap.getEdgeSize() - 1)/2;
+				
 				
 				// ***** get TIMER remaining *****
 				out.println("TIMER");
@@ -178,97 +179,73 @@ public class ROVER_04 {
 				if (line.startsWith("TIMER")) {
 					String timeRemaining = line.substring(6);
 					System.out.println(rovername + " timeRemaining: " + timeRemaining);
-				}
-				
-				
-	
+}
 				
 				// ***** MOVING *****
 				// try moving east 5 block if blocked
-				if (blocked) {
-					//int ct=0;
-					char d;
-					while(stepCount!=0)
-					{
-					d=generateRandomDirection();	
-					out.println("MOVE "+d);
-				//	Thread.sleep(300);
-					System.out.println("Blocked Steps ");
-					stepCount--;
-					}
+				if(blockedByRover)
+				{
+					dir=generateRandomDirection();
+					setDirection(dir);
+					moveRover(scanMapTiles, centerIndex);
 					
-//					for (int i = 0; i < 5; i++) {
-//						out.println("MOVE E");
-//						//System.out.println("ROVER_04 request move E");
-//						Thread.sleep(300);
-//					}
-					blocked = false;
-//					//reverses direction after being blocked
-					goingSouth = !goingSouth;
-				} else {
-	
-					// pull the MapTile array out of the ScanMap object
-					scanMapTiles = scanMap.getScanMap();
-					 centerIndex = (scanMap.getEdgeSize() - 1)/2;
-					// tile S = y + 1; N = y - 1; E = x + 1; W = x - 1
-	
-					if (goingSouth) {
-						// check scanMap to see if path is blocked to the south
-						// (scanMap may be old data by now)
-						if (scanMapTiles[centerIndex][centerIndex +1].getHasRover() 
-								|| scanMapTiles[centerIndex][centerIndex +1].getTerrain() == Terrain.ROCK
-								|| scanMapTiles[centerIndex][centerIndex +1].getTerrain() == Terrain.SAND
-								|| scanMapTiles[centerIndex][centerIndex +1].getTerrain() == Terrain.NONE) {
-							blocked = true;
-							stepCount = 5;  //side stepping
-						} else {
-							// request to server to move
-							out.println("MOVE S");
-							//System.out.println("ROVER_04 request move S");
+					blocked = Boolean.FALSE;
+					blockedByRover = Boolean.FALSE;
+					Thread.sleep(sleepTime);
+					
+				}
+				else if (blocked) {
+					
+						moveWhenBlocked(scanMapTiles, centerIndex);
+						Thread.sleep(sleepTime);
+						
+					for (int i = 0; i < 6 ; i++) {
+						
+						scanMapTiles=getScanMapTiles();
+						dir=generateRandomDirection();
+						setDirection(dir);
+						moveRover(scanMapTiles, centerIndex);
+						blocked = Boolean.FALSE;
+						blockedByRover = Boolean.FALSE;
+						Thread.sleep(sleepTime);
+						currentLoc=getCurrentLoaction();
+						scanMapTiles =getScanMapTiles();
+						
 						}
+					}else {
 						
-					} else {
-						// check scanMap to see if path is blocked to the north
-						// (scanMap may be old data by now)
-						//System.out.println("ROVER_04 scanMapTiles[2][1].getHasRover() " + scanMapTiles[2][1].getHasRover());
-						//System.out.println("ROVER_04 scanMapTiles[2][1].getTerrain() " + scanMapTiles[2][1].getTerrain().toString());
-						
-						if (scanMapTiles[centerIndex][centerIndex -1].getHasRover() 
-								|| scanMapTiles[centerIndex][centerIndex -1].getTerrain() == Terrain.ROCK
-								|| scanMapTiles[centerIndex][centerIndex -1].getTerrain() == Terrain.SAND
-								|| scanMapTiles[centerIndex][centerIndex -1].getTerrain() == Terrain.NONE) {
-							blocked = true;
-							stepCount = 5;  //side stepping
-						} else {
-							// request to server to move
-							out.println("MOVE N");
-							//System.out.println("ROVER_04 request move N");
-						}					
-					}
-				}
-	
-				// another call for current location
-				out.println("LOC");
-				line = in.readLine();
-				if(line == null){
-					System.out.println("ROVER_04 check connection to server");
-					line = "";
-				}
-				if (line.startsWith("LOC")) {
-					currentLoc = extractLocationFromString(line);
+				
 					
-				}
+					if(blocked==Boolean.FALSE && blockedByRover==Boolean.FALSE){
+						getTargetDirection(currentLoc, targetLocation);
+						moveRover(scanMapTiles,centerIndex);
+					}	
+					currentLoc=getCurrentLoaction();
+					scanMapTiles=getScanMapTiles();
+					
+					if(currentLoc.xpos==targetLocation.xpos && currentLoc.ypos==targetLocation.ypos)
+					{
+						if(!traverseJackpot)
+						{
+							//gatherInJackpot(scanMapTiles,centerIndex);
+							traverseJackpot=Boolean.TRUE;
+						}
+					
+						
+					}
+					
+					}
 	
-	
-				// test for stuckness
+			// test for stuckness
 				stuck = currentLoc.equals(previousLoc);
 	
 				//System.out.println("ROVER_04 stuck test " + stuck);
 				System.out.println("ROVER_04 blocked test " + blocked);
 	
 				// TODO - logic to calculate where to move next
-	
 				
+				
+               
 				// this is the Rovers HeartBeat, it regulates how fast the Rover cycles through the control loop
 				Thread.sleep(sleepTime);
 				
@@ -291,71 +268,68 @@ public class ROVER_04 {
 
 	} // END of Rover main control loop
 	
+	
+	// tile S = y + 1; N = y - 1; E = x + 1; W = x - 1
+	private void moveWhenBlocked(MapTile[][]scanMapTiles, int x) throws Exception {
+		Boolean north,east,south,west;
+		north=Boolean.FALSE;
+		east=Boolean.FALSE;
+		south=Boolean.FALSE;
+		west=Boolean.FALSE;
+		
+		if(checkNorthDirection(scanMapTiles, x, x))
+			north=Boolean.TRUE;
+		if(checkEastDirection(scanMapTiles, x, x))
+			east=Boolean.TRUE;
+		if(checkSouthDirection(scanMapTiles, x, x))
+			south=Boolean.TRUE;
+		if(checkWestDirection(scanMapTiles, x, x))
+			west=Boolean.TRUE;
+		
+		if(north)
+			setDirection("N");
+		else if(east)
+			setDirection("E");
+		else if(south)
+			setDirection("S");
+		else if(west)
+			setDirection("W");
+		
+		moveRover(scanMapTiles, x);
+			
+		
+	}
+
+	private MapTile[][] getScanMapTiles() throws Exception {
+		// ***** do a SCAN *****
+		// gets the scanMap from the server based on the Rover current location
+		doScan(); 
+		// prints the scanMap to the Console output for debug purposes
+		scanMap.debugPrintMap();
+		 return scanMap.getScanMap();
+		
+	}
+
 	// ####################### Support Methods #############################
 	
-	private Boolean isBlocked(MapTile scanMapTile)
-	{
-		if (scanMapTile.getHasRover() 
-				|| scanMapTile.getTerrain() == Terrain.ROCK
-				|| scanMapTile.getTerrain() == Terrain.SAND
-				|| scanMapTile.getTerrain() == Terrain.NONE) 
-			return Boolean.TRUE;
-		return Boolean.FALSE;
-	}
-	
-	private char generateRandomDirection()
-	{
-		String direction="";
-		int centerIndex = 3;
-		Boolean flag= Boolean.TRUE;
-		MapTile[][] scanMapTiles;
-		while(flag)
-		{
-			scanMapTiles=scanMap.getScanMap();
-			Random rand = new Random();
-			direction= cardinals[rand.nextInt(4)];
-			
-			if(direction=="E")
-			{
-				if(!isBlocked(scanMapTiles[centerIndex+1][centerIndex ]))
-				{
-					//out.println("MOVE E");
-					flag=Boolean.FALSE;
-				}
-			}
-			else	if(direction=="W")
-			{
-				if(!isBlocked(scanMapTiles[centerIndex-1][centerIndex ]))
-				{
-				//	out.println("MOVE W");
-					flag=Boolean.FALSE;
-				}
-			}
-			else	if(direction=="N")
-			{
-				if(!isBlocked(scanMapTiles[centerIndex][centerIndex-1]))
-				{
-				//	out.println("MOVE N");
-					flag=Boolean.FALSE;
-				}
-			}
-			else		if(direction=="S")
-			{
-					if(!isBlocked(scanMapTiles[centerIndex][centerIndex+1]))
-					{
-				//		out.println("MOVE S");
-						flag=Boolean.FALSE;
-					}
-			
-			}
-		
+	private Coord getCurrentLoaction() throws Exception {
+		String line;
+		Coord currentLoc=null;
+		out.println("LOC");
+		line = in.readLine();
+		if(line == null){
+			System.out.println("ROVER_04 check connection to server");
+			line = "";
+		}
+		if (line.startsWith("LOC")) {
+			currentLoc = extractLocationFromString(line);
+			System.out.println(rovername + " currentLoc at start: " + currentLoc);
 		}
 		
-		return direction.charAt(0);
+		return currentLoc;
 		
 	}
-	
-	
+
 	private void clearReadLineBuffer() throws IOException{
 		while(in.ready()){
 			//System.out.println("ROVER_04 clearing readLine()");
@@ -404,55 +378,48 @@ public class ROVER_04 {
 		return returnList;
 	}
 	
-	
-/*	public String getRandomDirection()
-	{
-		Random rand = new Random();
-		return cardinals[rand.nextInt()%4];
-	}
-*/	
-
 	// sends a SCAN request to the server and puts the result in the scanMap array
-	public void doScan() throws IOException {
-		//System.out.println("ROVER_04 method doScan()");
-		Gson gson = new GsonBuilder()
-    			.setPrettyPrinting()
-    			.enableComplexMapKeySerialization()
-    			.create();
-		out.println("SCAN");
+		public void doScan() throws IOException {
+			//System.out.println("ROVER_04 method doScan()");
+			Gson gson = new GsonBuilder()
+	    			.setPrettyPrinting()
+	    			.enableComplexMapKeySerialization()
+	    			.create();
+			out.println("SCAN");
 
-		String jsonScanMapIn = in.readLine(); //grabs the string that was returned first
-		if(jsonScanMapIn == null){
-			System.out.println("ROVER_04 check connection to server");
-			jsonScanMapIn = "";
-		}
-		StringBuilder jsonScanMap = new StringBuilder();
-		System.out.println("ROVER_04 incomming SCAN result - first readline: " + jsonScanMapIn);
-		
-		if(jsonScanMapIn.startsWith("SCAN")){	
-			while (!(jsonScanMapIn = in.readLine()).equals("SCAN_END")) {
-				//System.out.println("ROVER_04 incomming SCAN result: " + jsonScanMapIn);
-				jsonScanMap.append(jsonScanMapIn);
-				jsonScanMap.append("\n");
-				//System.out.println("ROVER_04 doScan() bottom of while");
+			String jsonScanMapIn = in.readLine(); //grabs the string that was returned first
+			if(jsonScanMapIn == null){
+				System.out.println("ROVER_04 check connection to server");
+				jsonScanMapIn = "";
 			}
-		} else {
-			// in case the server call gives unexpected results
-			clearReadLineBuffer();
-			return; // server response did not start with "SCAN"
+			StringBuilder jsonScanMap = new StringBuilder();
+			System.out.println("ROVER_04 incomming SCAN result - first readline: " + jsonScanMapIn);
+			
+			if(jsonScanMapIn.startsWith("SCAN")){	
+				while (!(jsonScanMapIn = in.readLine()).equals("SCAN_END")) {
+					//System.out.println("ROVER_04 incomming SCAN result: " + jsonScanMapIn);
+					jsonScanMap.append(jsonScanMapIn);
+					jsonScanMap.append("\n");
+					//System.out.println("ROVER_04 doScan() bottom of while");
+				}
+			} else {
+				// in case the server call gives unexpected results
+				clearReadLineBuffer();
+				return; // server response did not start with "SCAN"
+			}
+			//System.out.println("ROVER_04 finished scan while");
+
+			String jsonScanMapString = jsonScanMap.toString();
+			// debug print json object to a file
+			//new MyWriter( jsonScanMapString, 0);  //gives a strange result - prints the \n instead of newline character in the file
+
+			//System.out.println("ROVER_04 convert from json back to ScanMap class");
+			// convert from the json string back to a ScanMap object
+			scanMap = gson.fromJson(jsonScanMapString, ScanMap.class);		
 		}
-		//System.out.println("ROVER_04 finished scan while");
+		
 
-		String jsonScanMapString = jsonScanMap.toString();
-		// debug print json object to a file
-		//new MyWriter( jsonScanMapString, 0);  //gives a strange result - prints the \n instead of newline character in the file
-
-		//System.out.println("ROVER_04 convert from json back to ScanMap class");
-		// convert from the json string back to a ScanMap object
-		scanMap = gson.fromJson(jsonScanMapString, ScanMap.class);		
-	}
 	
-
 	// this takes the server response string, parses out the x and x values and
 	// returns a Coord object	
 	public static Coord extractLocationFromString(String sStr) {
@@ -470,21 +437,241 @@ public class ROVER_04 {
 		return null;
 	}
 	
+	public Boolean validateMapTile(MapTile map) {
+		
+		if ( map.getHasRover() == Boolean.TRUE){
+			blockedByRover=Boolean.TRUE;
+			blocked=Boolean.FALSE;
+			return Boolean.FALSE;
+		}
+		if (map.getTerrain() == Terrain.SAND || map.getTerrain() == Terrain.NONE){
+			blocked=Boolean.TRUE;
+			blockedByRover=Boolean.FALSE;
+			return Boolean.FALSE;
+		}
 
+		return Boolean.TRUE;
+
+	}
+	
+	public String generateRandomDirection() {
+
+		Random ran = new Random();
+	
+		int i =  ran.nextInt(1000)%4;
+		if(i==0)
+		{
+			return "S";			
+		}
+		else if(i ==1)
+		{
+			return "N";
+		}
+		else if(i==2)
+		{
+			return "W";
+		}else
+		{
+			return "E";
+		}
+
+	}
+	
+	public void setDirection(String dir)
+	{
+		
+		if(dir.equals("S")){
+			goingSouth=Boolean.TRUE;goingEast=Boolean.FALSE;goingWest=Boolean.FALSE;goingNorth=Boolean.FALSE;
+		}else if(dir.equals("N")){
+			goingSouth=Boolean.FALSE;goingEast=Boolean.FALSE;goingWest=Boolean.FALSE;goingNorth=Boolean.TRUE;
+		}else if(dir.equals("W")){
+			goingSouth=Boolean.FALSE;goingEast=Boolean.FALSE;goingWest=Boolean.TRUE;goingNorth=Boolean.FALSE;
+		}else if(dir.equals("E")){
+			goingSouth=Boolean.FALSE;goingEast=Boolean.TRUE;goingWest=Boolean.FALSE;goingNorth=Boolean.FALSE;
+		}else
+			generateRandomDirection();
+		
+	}
+	
+	public void getTargetDirection(Coord current,Coord target) throws Exception {
+
+		
+		MapTile[][] map = scanMap.getScanMap();
+		int x = (scanMap.getEdgeSize() - 1) / 2;
+		// S = y + 1; N = y - 1; E = x + 1; W = x - 1
+		if (current.xpos == target.xpos
+				&& current.ypos == target.ypos) {
+//			directionChecker();
+		} else if ((current.xpos < target.xpos && current.ypos < target.ypos)) {
+			if (goingHorizontal) {
+					goingSouth = Boolean.TRUE;
+					goingNorth = Boolean.FALSE;
+					goingEast = Boolean.FALSE;
+					goingWest = Boolean.FALSE;
+				} else {
+					goingSouth = Boolean.FALSE;
+					goingNorth = Boolean.FALSE;
+					goingEast = Boolean.TRUE;
+					goingWest = Boolean.FALSE;
+				
+			}
+
+		} else if ((current.xpos > target.xpos && current.ypos > target.ypos)) {
+			if (goingHorizontal) {
+				goingSouth = Boolean.FALSE;
+				goingNorth = Boolean.TRUE;
+				goingEast = Boolean.FALSE;
+				goingWest = Boolean.FALSE;
+			} else {
+				goingSouth = Boolean.FALSE;
+				goingNorth = Boolean.FALSE;
+				goingEast = Boolean.FALSE;
+				goingWest = Boolean.TRUE;
+			
+			}	
+		}else if (current.xpos == target.xpos) {
+
+			if (current.ypos < target.ypos) {
+					goingSouth = Boolean.TRUE;
+					goingNorth = Boolean.FALSE;
+					goingEast = Boolean.FALSE;
+					goingWest = Boolean.FALSE;
+				
+			} else {
+					goingSouth = Boolean.FALSE;
+					goingNorth = Boolean.TRUE;
+					goingEast = Boolean.FALSE;
+					goingWest = Boolean.FALSE;
+			}
+		} else if (current.ypos == target.ypos) {
+			if (current.xpos < target.xpos) {
+					goingSouth = Boolean.FALSE;
+					goingNorth = Boolean.FALSE;
+					goingEast = Boolean.TRUE;
+					goingWest = Boolean.FALSE;
+			} else {
+					goingSouth = Boolean.FALSE;
+					goingNorth = Boolean.FALSE;
+					goingEast = Boolean.FALSE;
+					goingWest = Boolean.TRUE;
+					
+			}
+		} else if (current.xpos > target.xpos) {
+				goingSouth = Boolean.FALSE;
+				goingNorth = Boolean.FALSE;
+				goingEast = Boolean.FALSE;
+				goingWest = Boolean.TRUE;
+			
+		} else {
+				goingSouth = Boolean.FALSE;
+				goingNorth = Boolean.FALSE;
+				goingEast = Boolean.TRUE;
+				goingWest = Boolean.FALSE;
+		}
+
+	}
+	
+	public void moveRover(MapTile[][] scanMapTiles,int centerIndex) throws Exception
+	{
+		//out.println("GATHER"); 
+		// tile S = y + 1; N = y - 1; E = x + 1; W = x - 1
+		if (goingSouth) {
+			
+			goingHorizontal = Boolean.FALSE;
+			if (!checkSouthDirection(scanMapTiles, centerIndex, centerIndex)) {
+				blocked = true;
+			} else {
+				out.println("MOVE S");
+			}
+			
+		}else if(goingEast)
+		{
+			goingHorizontal = Boolean.TRUE;
+		
+				if (!checkEastDirection(scanMapTiles, centerIndex, centerIndex)) {
+					blocked = true;
+				} else {
+					out.println("MOVE E");
+				}
+			}else if (goingWest) {
+			goingHorizontal = Boolean.TRUE;
+
+			if (!checkWestDirection(scanMapTiles, centerIndex, centerIndex)) {
+				blocked = true;
+			} else {
+				out.println("MOVE W");
+			}
+
+		}else {
+			goingHorizontal = Boolean.FALSE;
+			if (!checkNorthDirection(scanMapTiles,centerIndex,centerIndex)) {
+				blocked = true;
+			} else {
+				out.println("MOVE N");
+			}					
+		} 
+		Thread.sleep(sleepTime);
+		
+	} 
+	// checks for obstacle in North Direction
+	Boolean checkNorthDirection(MapTile[][] map, int x, int y) {
+		if (validateMapTile(map[x][y - 1])) // North
+		{
+			goingSouth = Boolean.FALSE;
+			goingNorth = Boolean.TRUE;
+			goingEast = Boolean.FALSE;
+			goingWest = Boolean.FALSE;
+			return Boolean.TRUE;
+		}
+		return Boolean.FALSE;
+	}
+
+	// checks for obstacle in East Direction
+	Boolean checkEastDirection(MapTile[][] map, int x, int y) {
+		if (validateMapTile(map[x + 1][y])) // East
+		{
+			goingSouth = Boolean.FALSE;
+			goingNorth = Boolean.FALSE;
+			goingEast = Boolean.TRUE;
+			goingWest = Boolean.FALSE;
+			return Boolean.TRUE;
+		}
+		return Boolean.FALSE;
+	}
+
+	// checks for obstacle in South Direction
+	Boolean checkSouthDirection(MapTile[][] map, int x, int y) {
+		if (validateMapTile(map[x][y + 1])) // South
+		{
+			goingSouth = Boolean.TRUE;
+			goingNorth = Boolean.FALSE;
+			goingEast = Boolean.FALSE;
+			goingWest = Boolean.FALSE;
+			return Boolean.TRUE;
+		}
+		return Boolean.FALSE;
+	}
+
+	// checks for obstacle in West Direction
+	Boolean checkWestDirection(MapTile[][] map, int x, int y) {
+		if (validateMapTile(map[x - 1][y])) // West
+		{
+			goingSouth = Boolean.FALSE;
+			goingNorth = Boolean.FALSE;
+			goingEast = Boolean.FALSE;
+			goingWest = Boolean.TRUE;
+			return Boolean.TRUE;
+		}
+		return Boolean.FALSE;
+	}
+	
+	
 	/**
 	 * Runs the client
 	 */
 	public static void main(String[] args) throws Exception {
-		ROVER_04 client;
-    	// if a command line argument is included it is used as the map filename
-		// if present uses an IP address instead of localhost 
-		
-		if(!(args.length == 0)){
-			client = new ROVER_04(args[0]);
-		} else {
-			client = new ROVER_04();
-		}
-		
+//		ROVER_04 client = new ROVER_04("192.168.1.106");
+		ROVER_04 client = new ROVER_04();
 		client.run();
 	}
 }
