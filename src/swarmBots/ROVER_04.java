@@ -670,8 +670,9 @@ public class ROVER_04 {
 	 * Runs the client
 	 */
 	public static void main(String[] args) throws Exception {
-//		ROVER_04 client = new ROVER_04("192.168.1.106");
+
 		ROVER_04 client = new ROVER_04();
 		client.run();
 	}
 }
+
