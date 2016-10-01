@@ -281,8 +281,10 @@ public class ROVER_04 {
                     System.out.println(rovername + " timeRemaining: " + timeRemaining);
 }
                 
+                  
                 // ***** MOVING *****
                 // try moving east 5 block if blocked
+                
                 if(blockedByRover)
                 {
                     dir=generateRandomDirection();
@@ -295,7 +297,7 @@ public class ROVER_04 {
                     
                 }
                 else if (blocked) {
-                    
+                    // rover block LOGIC.
                         moveWhenBlocked(scanMapTiles, centerIndex);
                         Thread.sleep(sleepTime);
                         
@@ -323,7 +325,6 @@ public class ROVER_04 {
                     currentLoc=getCurrentLoaction();
                     scanMapTiles=getScanMapTiles();
                     
-                    //cchecking the coordinates of the position.
                     if(currentLoc.xpos==targetLocation.xpos && currentLoc.ypos==targetLocation.ypos)
                     {
                         if(!traverseJackpot)
@@ -333,6 +334,9 @@ public class ROVER_04 {
                         }
                     
                         
+                    }
+                    
+                    }
                     }
                     
                     }
