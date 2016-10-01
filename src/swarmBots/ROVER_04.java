@@ -40,6 +40,8 @@ public class ROVER_04 {
     static final int PORT_ADDRESS = 9537;
     
     
+    
+    
     boolean goingSouth = false,traverseJackpot=Boolean.FALSE;
     boolean goingEast = false;
     boolean goingWest = false;
@@ -223,6 +225,7 @@ public class ROVER_04 {
                     currentLoc=getCurrentLoaction();
                     scanMapTiles=getScanMapTiles();
                     
+                    //cchecking the coordinates of the position.
                     if(currentLoc.xpos==targetLocation.xpos && currentLoc.ypos==targetLocation.ypos)
                     {
                         if(!traverseJackpot)
