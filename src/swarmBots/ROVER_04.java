@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -18,6 +20,7 @@ import com.google.gson.reflect.TypeToken;
 import common.Coord;
 import common.MapTile;
 import common.ScanMap;
+import communication.RoverCommunication;
 import enums.RoverDriveType;
 import enums.RoverToolType;
 import enums.Science;
@@ -49,7 +52,8 @@ public class ROVER_04 {
     boolean blockedByRover = false;
    
    
-   
+    /* Communication Module*/
+    RoverCommunication rocom;
 
 
     public ROVER_04() {
@@ -94,7 +98,7 @@ public class ROVER_04 {
                 }
             }
    
-           
+         
             // ********* Rover logic setup *********
            
             String line = "";
