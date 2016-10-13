@@ -2,6 +2,7 @@
 Group-4-> Arish,Sagar,Vishal and juhi (All present)
 Meeting venue-Et 245, Time-4pm, Date:12th october,2016
 
+# we studied MORE about git , watched the video provided in csns to be more confident using GIT.
 # Issues discussed - A star algo implementation, Communication module , collecting radio-active elements
 resolving merge conflict and local errors occuring in eclipse.
 # Solved the error about rover as we have modified the movement algo,earlier it used to go vertically or horizontally 
