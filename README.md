@@ -9,7 +9,7 @@ but right now we implemented new method so it started moving in all direction.
 #The rover moves in zig-zag direction and aims in the destination co-ordinates(jackpot) 
 
 # Since friday till today PROGRESS REPORT : 1)Arish & vishal-working on communication module
-                                            2) Sagar & juhi - working on drilling
+                                            2) Sagar & juhi - working on drill part
 
 
 
