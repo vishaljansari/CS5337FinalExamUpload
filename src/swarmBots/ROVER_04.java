@@ -394,9 +394,7 @@ public void gatherInJackpot(MapTile[][] scanMapTiles, int centerIndex) throws Ex
             in.readLine();   
         }
     }
-   
-
-    // method to retrieve a list of the rover's EQUIPMENT from the server
+       // method to retrieve a list of the rover's EQUIPMENT from the server
     private ArrayList<String> getEquipment() throws IOException {
         //System.out.println("ROVER_04 method getEquipment()");
         Gson gson = new GsonBuilder()
