@@ -6,9 +6,12 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.lang.reflect.Type;
 import java.net.Socket;
+import communication.RoverCommunication;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import javax.swing.GroupLayout.Group;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -18,6 +21,7 @@ import com.google.gson.reflect.TypeToken;
 import common.Coord;
 import common.MapTile;
 import common.ScanMap;
+import communication.RoverCommunication;
 import enums.RoverDriveType;
 import enums.RoverToolType;
 import enums.Science;
@@ -36,7 +40,7 @@ public class ROVER_04 {
     String rovername;
     ScanMap scanMap;
     int sleepTime=150;
-    String SERVER_ADDRESS = "localhost";//"192.168.1.106";
+    String SERVER_ADDRESS = "localhost";
     static final int PORT_ADDRESS = 9537;
    
    
@@ -49,7 +53,8 @@ public class ROVER_04 {
     boolean blockedByRover = false;
    
    
-   
+    /* Communication Module*/
+    RoverCommunication rocom;
 
 
     public ROVER_04() {
@@ -81,7 +86,18 @@ public class ROVER_04 {
 
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
-     
+//            Group group = new Group(rovername, SERVER_ADDRESS, 53708, RoverDriveType.WALKER,
+//                    RoverToolType.DRILL, RoverToolType.RADIATION_SENSOR);
+//
+//            /* Setup communication, only communicates with gatherers */
+//            rocom = new RoverCommunication(group);
+//            rocom.setGroupList(Group.getGatherers());
+//
+//            /* Can't go on ROCK, thus ignore any SCIENCE COORDS that is on ROCK */
+//            rocom.ignoreTerrain(Terrain.ROCK);
+//
+//            /* Start your server, receive incoming message from other ROVERS */
+//            rocom.startServer();
             // Process all messages from server, wait until server requests Rover ID
             // name - Return Rover Name to complete connection
             while (true) {
@@ -94,7 +110,7 @@ public class ROVER_04 {
                 }
             }
    
-           
+         
             // ********* Rover logic setup *********
            
             String line = "";
@@ -227,11 +243,10 @@ public class ROVER_04 {
                     {
                         if(!traverseJackpot)
                         {
-                            //gatherInJackpot(scanMapTiles,centerIndex);
+                            gatherInJackpot(scanMapTiles,centerIndex);
                             traverseJackpot=Boolean.TRUE;
                         }
-                   
-                       
+                        
                     }
                    
                     }
@@ -267,7 +282,50 @@ public class ROVER_04 {
         }
 
     } // END of Rover main control loop
-   
+public void gatherInJackpot(MapTile[][] scanMapTiles, int centerIndex) throws Exception {
+		
+	Coord currentLocation = getCurrentLoaction();
+		int i,j,xPos,yPos;
+		
+		String dir;
+//		targetLocation=targetLocation;
+		
+		List<Coord> list= new ArrayList<Coord>();
+		Boolean flag;
+		for(i=0;i<7;i++){
+			for(j=0;j<7;j++)
+			{
+				if((scanMapTiles[i][i].getTerrain() == Terrain.ROCK || scanMapTiles[i][j].getTerrain() == Terrain.SOIL || scanMapTiles[i][j].getTerrain() == Terrain.GRAVEL ))
+				{
+					if(i>3){
+						xPos=(currentLocation.xpos+(i%4)+1);
+					}
+					else 
+					if(i<3)
+					{
+						xPos=(currentLocation.xpos-(4-i)+1);
+					}
+					else
+					{
+						xPos=currentLocation.xpos;
+					}
+					if(j<3)
+					{
+						yPos=currentLocation.ypos-(4-j)+1;
+					}
+					else 
+					if(j>3)
+					{
+						yPos=currentLocation.ypos+(j%4)+1;
+					}
+					else{
+						yPos=currentLocation.ypos;
+					}
+					list.add(new Coord(xPos,yPos));	
+				}
+			}
+		}
+}
    
     // tile S = y + 1; N = y - 1; E = x + 1; W = x - 1
     private void moveWhenBlocked(MapTile[][]scanMapTiles, int x) throws Exception {
