@@ -5,8 +5,6 @@ import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.GroupLayout.Group;
-
 import common.Coord;
 import common.MapTile;
 import enums.Terrain;
