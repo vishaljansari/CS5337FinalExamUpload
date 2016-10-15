@@ -7,16 +7,18 @@ import java.io.PrintWriter;
 import java.lang.reflect.Type;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
-
-import javax.swing.GroupLayout.Group;
+import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-//import com.sun.org.apache.xpath.internal.operations.Bool;
 
+import rover_logic.SearchLogic;
+import supportTools.CommunicationHelper;
 import common.Communication;
 import common.Coord;
 import common.MapTile;
@@ -26,6 +28,9 @@ import enums.RoverToolType;
 import enums.Science;
 import enums.Terrain;
 
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 /**
  * The seed that this program is built on is a chat program example found here:
  * http://cs.lmu.edu/~ray/notes/javanetexamples/ Many thanks to the authors for
@@ -41,7 +46,11 @@ public class ROVER_04 {
     int sleepTime=150;
     String SERVER_ADDRESS = "localhost";
     static final int PORT_ADDRESS = 9537;
-   
+    public static Map<Coord, MapTile> globalMap;
+    List<Coord> destinations;
+    long trafficCounter;
+    static final long walkerDelay = TimeUnit.MILLISECONDS.toMillis(1230);
+
    
     boolean goingSouth = false,traverseJackpot=Boolean.FALSE;
     boolean goingEast = false;
@@ -59,6 +68,8 @@ public class ROVER_04 {
         SERVER_ADDRESS = "localhost";
         // this should be a safe but slow timer value
         sleepTime = 200; // in milliseconds - smaller is faster, but the server will cut connection if it is too small
+        globalMap = new HashMap<>();
+        destinations = new ArrayList<>();
     }
    
     public ROVER_04(String serverAddress) {
@@ -67,6 +78,8 @@ public class ROVER_04 {
         rovername = "ROVER_04";
         SERVER_ADDRESS = serverAddress;
         sleepTime = 200; // in milliseconds - smaller is faster, but the server will cut connection if it is too small
+        globalMap = new HashMap<>();
+        destinations = new ArrayList<>();
     }
 
     /**
@@ -136,6 +149,11 @@ public class ROVER_04 {
             }
             System.out.println(rovername + " TARGET_LOC " + targetLocation);
            
+            // ******* destination *******
+            // TODO: Sort destination depending on current Location
+
+            SearchLogic search = new SearchLogic();
+            
             // ******** define Communication
 //          String url = "http://192.168.1.104:3000/api";
           String url = "http://localhost:3000/api";
@@ -156,8 +174,10 @@ public class ROVER_04 {
 
 //          destinations.add(targetLocation);
           //TODO: implement sweep target location
+          
+          
 
-          Coord destination = null;
+          	Coord destination = null;
 
 
             boolean stuck = false; // just means it did not change locations between requests,
@@ -189,6 +209,13 @@ public class ROVER_04 {
                 // tile S = y + 1; N = y - 1; E = x + 1; W = x - 1
                 MapTile[][] scanMapTiles =getScanMapTiles();
                 int centerIndex = (scanMap.getEdgeSize() - 1)/2;
+                updateglobalMap(currentLoc, scanMapTiles);
+                System.out.println("post message: " + com.postScanMapTiles(currentLoc, scanMapTiles));
+                if (trafficCounter % 5 == 0) {
+                    updateglobalMap(com.getGlobalMap());
+
+                }
+                trafficCounter++;
                
                
                 // ***** get TIMER remaining *****
@@ -203,6 +230,7 @@ public class ROVER_04 {
                     System.out.println(rovername + " timeRemaining: " + timeRemaining);
 }
                
+                
                 // ***** MOVING *****
                 // try moving east 5 block if blocked
                 if(blockedByRover)
@@ -371,8 +399,55 @@ public void gatherInJackpot(MapTile[][] scanMapTiles, int centerIndex) throws Ex
         // prints the scanMap to the Console output for debug purposes
         scanMap.debugPrintMap();
          return scanMap.getScanMap();
-       
+         
+    }	
+
+    private void updateglobalMap(Coord currentLoc, MapTile[][] scanMapTiles) {
+        int centerIndex = (scanMap.getEdgeSize() - 1) / 2;
+
+        for (int row = 0; row < scanMapTiles.length; row++) {
+            for (int col = 0; col < scanMapTiles[row].length; col++) {
+
+                MapTile mapTile = scanMapTiles[col][row];
+
+                int xp = currentLoc.xpos - centerIndex + col;
+                int yp = currentLoc.ypos - centerIndex + row;
+                Coord coord = new Coord(xp, yp);
+                globalMap.put(coord, mapTile);
+            }
+        }
+        MapTile currentMapTile = scanMapTiles[centerIndex][centerIndex].getCopyOfMapTile();
+        currentMapTile.setHasRoverFalse();
+        globalMap.put(currentLoc, currentMapTile);
     }
+ // get data from server and update field map
+    private void updateglobalMap(JSONArray data) {
+
+        for (Object o : data) {
+
+            JSONObject jsonObj = (JSONObject) o;
+            boolean marked = (jsonObj.get("g") != null) ? true : false;
+            int x = (int) (long) jsonObj.get("x");
+            int y = (int) (long) jsonObj.get("y");
+            Coord coord = new Coord(x, y);
+
+            // only bother to save if our globalMap doesn't contain the coordinate
+            if (!globalMap.containsKey(coord)) {
+                MapTile tile = CommunicationHelper.convertToMapTile(jsonObj);
+
+                // if tile has science AND is not in sand
+                if (tile.getScience() != Science.NONE && tile.getTerrain() != Terrain.SAND) {
+
+                    // then add to the destination
+                    if (!destinations.contains(coord) && !marked)
+                        destinations.add(coord);
+                }
+
+                globalMap.put(coord, tile);
+            }
+        }
+    }
+
 
     // ####################### Support Methods #############################
    
