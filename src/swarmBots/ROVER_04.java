@@ -6,7 +6,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.lang.reflect.Type;
 import java.net.Socket;
-import communication.RoverCommunication;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -18,10 +17,10 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 //import com.sun.org.apache.xpath.internal.operations.Bool;
 
+import common.Communication;
 import common.Coord;
 import common.MapTile;
 import common.ScanMap;
-import communication.RoverCommunication;
 import enums.RoverDriveType;
 import enums.RoverToolType;
 import enums.Science;
@@ -52,11 +51,7 @@ public class ROVER_04 {
     boolean blocked = false;
     boolean blockedByRover = false;
    
-   
-    /* Communication Module*/
-    RoverCommunication rocom;
-
-
+  
     public ROVER_04() {
         // constructor
         System.out.println("ROVER_04 rover object constructed");
@@ -86,20 +81,9 @@ public class ROVER_04 {
 
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
-//            Group group = new Group(rovername, SERVER_ADDRESS, 53708, RoverDriveType.WALKER,
-//                    RoverToolType.DRILL, RoverToolType.RADIATION_SENSOR);
-//
-//            /* Setup communication, only communicates with gatherers */
-//            rocom = new RoverCommunication(group);
-//            rocom.setGroupList(Group.getGatherers());
-//
-//            /* Can't go on ROCK, thus ignore any SCIENCE COORDS that is on ROCK */
-//            rocom.ignoreTerrain(Terrain.ROCK);
-//
-//            /* Start your server, receive incoming message from other ROVERS */
-//            rocom.startServer();
-            // Process all messages from server, wait until server requests Rover ID
-            // name - Return Rover Name to complete connection
+          
+            
+
             while (true) {
                 String line = in.readLine();
                 if (line.startsWith("SUBMITNAME")) {
@@ -152,7 +136,29 @@ public class ROVER_04 {
             }
             System.out.println(rovername + " TARGET_LOC " + targetLocation);
            
-           
+            // ******** define Communication
+//          String url = "http://192.168.1.104:3000/api";
+          String url = "http://localhost:3000/api";
+          String corp_secret = "gz5YhL70a2";
+
+          Communication com = new Communication(url, rovername, corp_secret);
+
+          boolean beenToJackpot = false;
+          boolean ranSweep = false;
+
+          long startTime;
+          long estimatedTime;
+          long sleepTime2;
+
+          // Get destinations from Sensor group. I am a driller!
+          List<Coord> blockedDestinations = new ArrayList<>();
+
+
+//          destinations.add(targetLocation);
+          //TODO: implement sweep target location
+
+          Coord destination = null;
+
 
             boolean stuck = false; // just means it did not change locations between requests,
                                     // could be velocity limit or obstruction etc.
