@@ -52,7 +52,7 @@ public class ROVER_04 {
     List<Coord> visited =new ArrayList<Coord>();
     List<Coord> pLocationList =new ArrayList<Coord>();
     int pLocationListCount=0,pLocationListSize=7;
-    ROVER_04 rover = new ROVER_04();
+
    
     boolean goingSouth = false,traverseJackpot=Boolean.FALSE;
     boolean goingEast = false;
@@ -93,7 +93,7 @@ public class ROVER_04 {
         Socket socket = null;
         try {
             socket = new Socket(SERVER_ADDRESS, PORT_ADDRESS); // set Address & port here
-
+            
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
           
@@ -217,7 +217,6 @@ public class ROVER_04 {
                     if (!dests.isEmpty()) {
                         destination = getClosestDestination(cLoc);
                     }
-
                 }
                 trafficCounter++;
                
@@ -236,8 +235,6 @@ public class ROVER_04 {
                     System.out.println(rovername + " timeRemaining: " + timeRemaining);
                     
                 }
-               
-                
                 // ***** MOVING *****
                 // try to look for Jackpot
                 if (!beenToJackpot){
@@ -251,31 +248,7 @@ public class ROVER_04 {
                         JackPotDestinations(tLoc);
                     }
                 }
-//                if (logicA.getDistance(cLoc, destination) < 301) {
-//                if (logicA.validateTile(globalMap.get(destination), RoverDriveType.WALKER)) {
-//                    if (logicA.targetVisible(cLoc, tLoc)) {
-//             	       scanMapTiles = scanMap.getScanMap();
-//             	       out.println("Collecting sciences from the destination !!!");  
-//             	       sweep(tLoc, scanMapTiles);             
-//                    }
-//                    else {
-//                    	/** if no destination, get the closest destination **/
-//                    	Coord dest = rover.getClosestDestination(cLoc);
-//                    	if (logicA.targetVisible(cLoc, dest)) {
-//                        	scanMapTiles = scanMap.getScanMap();
-//                        	sweep(dest, scanMapTiles);  
-//                        }
-//                    }
-//                 }
-//             }
-//             
-//             boolean ans = isOccupied(cLoc);
-//             if(ans) {
-//             	//do something
-//             	//double d = SearchLogic.getDistance(currentLoc,rover.getClosestDestination(currentLoc));
-//             }
-             else {
- }
+                
                 // IMPLEMENT A* ALG to make the rover move fast and short path
                 if (destination == null) // no destination
                 {
@@ -350,7 +323,7 @@ public class ROVER_04 {
             }
        
         // This catch block closes the open socket connection to the server
-        } catch	(Exception e) {
+        } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         } finally {
