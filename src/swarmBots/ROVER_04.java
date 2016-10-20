@@ -258,7 +258,7 @@ public class ROVER_04 {
                     }
                 }
                 else {
-                	List<String> positions = logicA.Astar(cLoc, destination, scanMapTiles, RoverDriveType.WALKER, globalMap);
+                	List<String> positions = logicA.Astar(cLoc, tLoc, scanMapTiles, RoverDriveType.WALKER, globalMap);
                     
                     //System.out.println(rovername + " moves: " + positions.toString());
                     
@@ -425,19 +425,19 @@ private void JackPotDestinations(Coord potofluck) {
             int x = (int) (long) jsonObj.get("x");
             int y = (int) (long) jsonObj.get("y");
             Coord coord = new Coord(x, y);
-
-            // only bother to save if our globalMap doesn't contain the coordinate
+//
+//            // only bother to save if our globalMap doesn't contain the coordinate
             if (!globalMap.containsKey(coord)) {
                 MapTile tile = CommunicationHelper.convertToMapTile(jsonObj);
 
-                // if tile has science AND is not in sand
+//                // if tile has science AND is not in sand
                 if (tile.getScience() != Science.NONE && tile.getTerrain() != Terrain.SAND) {
 
-                    // then add to the destination
+//                    // then add to the destination
                     if (!dests.contains(coord) && !marked)
                     	dests.add(coord);
                 }
-
+//
                 globalMap.put(coord, tile);
             }
         }
