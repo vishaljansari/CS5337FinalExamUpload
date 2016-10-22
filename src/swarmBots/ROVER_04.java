@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
@@ -22,7 +21,6 @@ import common.Communication;
 import common.Coord;
 import common.MapTile;
 import common.ScanMap;
-import common.ScanMap1;
 import enums.RoverDriveType;
 import enums.Science;
 import enums.Terrain;
@@ -38,7 +36,7 @@ import org.json.simple.JSONObject;
 //This Rover was learned and implemented using ROVER11 as an sample, For the implementation of A* was already available 
 //at Search logic provided by our professor so understood the working of search logic & A* implemented as needed 
 //using internet and previous work done by some ppl on github as sample
-public class ROVER_04  {
+public class ROVER_04 {
 
     BufferedReader in;
     PrintWriter out;
@@ -54,7 +52,7 @@ public class ROVER_04  {
     List<Coord> visited =new ArrayList<Coord>();
     List<Coord> pLocationList =new ArrayList<Coord>();
     int pLocationListCount=0,pLocationListSize=7;
-
+   // ROVER_04 rover = new ROVER_04();
    
     boolean goingSouth = false,traverseJackpot=Boolean.FALSE;
     boolean goingEast = false;
@@ -95,7 +93,7 @@ public class ROVER_04  {
         Socket socket = null;
         try {
             socket = new Socket(SERVER_ADDRESS, PORT_ADDRESS); // set Address & port here
-            
+
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream(), true);
           
@@ -143,7 +141,7 @@ public class ROVER_04  {
             }
             System.out.println(rovername + " START_LOC " + roverStartPosition);
            
-            
+           
             // **** Request TARGET_LOC Location from SwarmServer ****
             out.println("TARGET_LOC");
             line = in.readLine();
@@ -154,11 +152,8 @@ public class ROVER_04  {
             if (line.startsWith("TARGET_LOC")) {
                 tLoc = extractLocationFromString(line);
             }
-            cLoc=getCurrentLoaction();
-            tLoc=getdynamicloc(cLoc);
             System.out.println(rovername + " TARGET_LOC " + tLoc);
            
-         
             // ******* destination *******
             // TODO: Sort destination depending on current Location
             //A* Logic Implementation
@@ -209,13 +204,10 @@ public class ROVER_04  {
                    
                 // after getting location set previous equal current to be able to check for stuckness and blocked later
                 pLoc = cLoc;       
-                MapTile[][] scanMapTiles =getScanMapTiles();
-                if(tLoc.xpos == cLoc.xpos && tLoc.ypos == cLoc.ypos){
-                	tLoc = getdynamicloc(cLoc);
-                }
+                           
                
                 // tile S = y + 1; N = y - 1; E = x + 1; W = x - 1
-                //MapTile[][] scanMapTiles =getScanMapTiles();
+                MapTile[][] scanMapTiles =getScanMapTiles();
                 int centerIndex = (scanMap.getEdgeSize() - 1)/2;
                 updateglobalMap(cLoc, scanMapTiles);
                 System.out.println("post message: " + com.postScanMapTiles(cLoc, scanMapTiles));
@@ -223,13 +215,12 @@ public class ROVER_04  {
                     updateglobalMap(com.getGlobalMap());
                  // ********* get closest destination from current location everytime
                     if (!dests.isEmpty()) {
-                        //destination = getClosestDestination(cLoc);
-                        destination = getdynamicloc(cLoc);
-                        com.postScanMapTiles(cLoc, scanMapTiles);
+                        destination = getClosestDestination(cLoc);
                     }
+
                 }
                 trafficCounter++;
-                
+               
                
                 // ***** get TIMER remaining *****
                 out.println("TIMER");
@@ -245,6 +236,8 @@ public class ROVER_04  {
                     System.out.println(rovername + " timeRemaining: " + timeRemaining);
                     
                 }
+               
+                
                 // ***** MOVING *****
                 // try to look for Jackpot
                 if (!beenToJackpot){
@@ -258,7 +251,31 @@ public class ROVER_04  {
                         JackPotDestinations(tLoc);
                     }
                 }
-                
+//                if (logicA.getDistance(cLoc, destination) < 301) {
+//                if (logicA.validateTile(globalMap.get(destination), RoverDriveType.WALKER)) {
+//                    if (logicA.targetVisible(cLoc, tLoc)) {
+//             	       scanMapTiles = scanMap.getScanMap();
+//             	       out.println("Collecting sciences from the destination !!!");  
+//             	       sweep(tLoc, scanMapTiles);             
+//                    }
+//                    else {
+//                    	/** if no destination, get the closest destination **/
+//                    	Coord dest = rover.getClosestDestination(cLoc);
+//                    	if (logicA.targetVisible(cLoc, dest)) {
+//                        	scanMapTiles = scanMap.getScanMap();
+//                        	sweep(dest, scanMapTiles);  
+//                        }
+//                    }
+//                 }
+//             }
+//             
+//             boolean ans = isOccupied(cLoc);
+//             if(ans) {
+//             	//do something
+//             	//double d = SearchLogic.getDistance(currentLoc,rover.getClosestDestination(currentLoc));
+//             }
+             else {
+ }
                 // IMPLEMENT A* ALG to make the rover move fast and short path
                 if (destination == null) // no destination
                 {
@@ -268,7 +285,7 @@ public class ROVER_04  {
                     }
                 }
                 else {
-                	List<String> positions = logicA.Astar(cLoc, destination, scanMapTiles, RoverDriveType.WALKER, globalMap);
+                	List<String> positions = logicA.Astar(cLoc, tLoc, scanMapTiles, RoverDriveType.WALKER, globalMap);
                     
                     //System.out.println(rovername + " moves: " + positions.toString());
                     
@@ -333,7 +350,7 @@ public class ROVER_04  {
             }
        
         // This catch block closes the open socket connection to the server
-        } catch (Exception e) {
+        } catch	(Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         } finally {
@@ -424,28 +441,7 @@ private void JackPotDestinations(Coord potofluck) {
         return currentLoc;
        
     }
-    public Coord getdynamicloc(Coord cLoc){
-    	 Random randomGenerator = new Random();
-    	 int randomY = randomGenerator.nextInt(30);
-    	 System.out.println("Y Axis :" +randomY );
-    	Coord c = new Coord(0,randomY);
-//    	ScanMap1 scanmap = new ScanMap1();
-//    	//MapTile[][] scanMapTiles = scanMap.getScanMap();
-//    	Boolean flag=Boolean.TRUE;
-//    
-//    	 if((scanmap.scanArray[c.getXpos()][c.getYpos()].getTerrain().getTerString().equals(Terrain.SAND))||scanmap.scanArray[c.getXpos()][c.getYpos()].getHasRover()||
-//					(scanmap.scanArray[c.getXpos()][c.getYpos()].getTerrain().equals(Terrain.NONE))){
-//    		 c = new Coord(0,randomY);
-//    	 }
-//    	 else{
-//    	
-//    	 
-    	if(c.getXpos()==cLoc.getXpos())
-    	{
-    		c = new Coord(0,randomY);
-    	}return c;
-    	 }
-    //}
+
  // get data from server and update field map
     private void updateglobalMap(JSONArray data) {
 
@@ -456,19 +452,19 @@ private void JackPotDestinations(Coord potofluck) {
             int x = (int) (long) jsonObj.get("x");
             int y = (int) (long) jsonObj.get("y");
             Coord coord = new Coord(x, y);
-//
-//            // only bother to save if our globalMap doesn't contain the coordinate
+
+            // only bother to save if our globalMap doesn't contain the coordinate
             if (!globalMap.containsKey(coord)) {
                 MapTile tile = CommunicationHelper.convertToMapTile(jsonObj);
 
-//                // if tile has science AND is not in sand
+                // if tile has science AND is not in sand
                 if (tile.getScience() != Science.NONE && tile.getTerrain() != Terrain.SAND) {
 
-//                    // then add to the destination
+                    // then add to the destination
                     if (!dests.contains(coord) && !marked)
                     	dests.add(coord);
                 }
-//
+
                 globalMap.put(coord, tile);
             }
         }
