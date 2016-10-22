@@ -37,6 +37,7 @@ import org.json.simple.JSONObject;
 //at Search logic provided by our professor so understood the working of search logic & A* implemented as needed 
 //using internet and previous work done by some ppl on github as sample
 public class ROVER_04 {
+	// DemoMidterm
 
     BufferedReader in;
     PrintWriter out;
@@ -52,7 +53,7 @@ public class ROVER_04 {
     List<Coord> visited =new ArrayList<Coord>();
     List<Coord> pLocationList =new ArrayList<Coord>();
     int pLocationListCount=0,pLocationListSize=7;
-   // ROVER_04 rover = new ROVER_04();
+    ROVER_04 rover = new ROVER_04();
    
     boolean goingSouth = false,traverseJackpot=Boolean.FALSE;
     boolean goingEast = false;
@@ -285,7 +286,7 @@ public class ROVER_04 {
                     }
                 }
                 else {
-                	List<String> positions = logicA.Astar(cLoc, tLoc, scanMapTiles, RoverDriveType.WALKER, globalMap);
+                	List<String> positions = logicA.Astar(cLoc, destination, scanMapTiles, RoverDriveType.WALKER, globalMap);
                     
                     //System.out.println(rovername + " moves: " + positions.toString());
                     
