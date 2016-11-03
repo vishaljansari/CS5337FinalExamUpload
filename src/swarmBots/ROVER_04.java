@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
@@ -153,7 +154,10 @@ public class ROVER_04 {
             if (line.startsWith("TARGET_LOC")) {
                 tLoc = extractLocationFromString(line);
             }
+            if(tLoc!=null)
             System.out.println(rovername + " TARGET_LOC " + tLoc);
+            else
+            	System.out.println("Empt y t loc");
            
             // ******* destination *******
             // TODO: Sort destination depending on current Location
@@ -216,7 +220,9 @@ public class ROVER_04 {
                     updateglobalMap(com.getGlobalMap());
                  // ********* get closest destination from current location everytime
                     if (!dests.isEmpty()) {
-                        destination = getClosestDestination(cLoc);
+                        //destination = getClosestDestination(cLoc);
+                        destination = getdynamicloc(cLoc);
+                        com.postScanMapTiles(cLoc, scanMapTiles);
                     }
 
                 }
@@ -236,8 +242,15 @@ public class ROVER_04 {
                     String timeRemaining = line.substring(6);
                     System.out.println(rovername + " timeRemaining: " + timeRemaining);
                     
-                }
+                }  
+                if(tLoc==null)
+                	tLoc=getdynamicloc(cLoc);
                
+               if( 	reachedTargetLoc(cLoc,tLoc))
+            	   tLoc=getdynamicloc(cLoc);
+            	  
+               
+                
                 
                 // ***** MOVING *****
                 // try to look for Jackpot
@@ -252,29 +265,6 @@ public class ROVER_04 {
                         JackPotDestinations(tLoc);
                     }
                 }
-//                if (logicA.getDistance(cLoc, destination) < 301) {
-//                if (logicA.validateTile(globalMap.get(destination), RoverDriveType.WALKER)) {
-//                    if (logicA.targetVisible(cLoc, tLoc)) {
-//             	       scanMapTiles = scanMap.getScanMap();
-//             	       out.println("Collecting sciences from the destination !!!");  
-//             	       sweep(tLoc, scanMapTiles);             
-//                    }
-//                    else {
-//                    	/** if no destination, get the closest destination **/
-//                    	Coord dest = rover.getClosestDestination(cLoc);
-//                    	if (logicA.targetVisible(cLoc, dest)) {
-//                        	scanMapTiles = scanMap.getScanMap();
-//                        	sweep(dest, scanMapTiles);  
-//                        }
-//                    }
-//                 }
-//             }
-//             
-//             boolean ans = isOccupied(cLoc);
-//             if(ans) {
-//             	//do something
-//             	//double d = SearchLogic.getDistance(currentLoc,rover.getClosestDestination(currentLoc));
-//             }
              else {
  }
                 // IMPLEMENT A* ALG to make the rover move fast and short path
@@ -286,7 +276,7 @@ public class ROVER_04 {
                     }
                 }
                 else {
-                	List<String> positions = logicA.Astar(cLoc, tLoc, scanMapTiles, RoverDriveType.WALKER, globalMap);
+                	List<String> positions = logicA.Astar(cLoc, destination, scanMapTiles, RoverDriveType.WALKER, globalMap);
                     
                     //System.out.println(rovername + " moves: " + positions.toString());
                     
@@ -372,12 +362,16 @@ private void JackPotDestinations(Coord potofluck) {
 		// TODO Auto-generated method stub
 	 int xp = potofluck.xpos-3; // X axis
      int yp = potofluck.ypos-3; // Y axis
-
+xp = Math.abs(xp);
+yp = Math.abs(yp);
      for (int i = 0 ; i < 7; i = i + 6)
      {
          for (int j = 0; j < 7; j = j + 6)
          {
              Coord coord = new Coord(xp + i, yp + j);
+             
+             
+             
              dests.add(coord);
          }
 }}
@@ -442,7 +436,21 @@ private void JackPotDestinations(Coord potofluck) {
         return currentLoc;
        
     }
-
+    
+    public Coord getdynamicloc(Coord cLoc){
+   	 Random randomGenerator = new Random();
+   	 int randomY = randomGenerator.nextInt(30);
+   	 int randomX = randomGenerator.nextInt(50);
+   	 System.out.println("Y Axis :" +randomY );
+   	System.out.println("X Axis :" +randomX );
+   	Coord c = new Coord(randomX,randomY);
+  	 
+   	if(c.getXpos()==cLoc.getXpos())
+   	{
+   		c = new Coord(randomX,randomY);
+   	}
+   	return c;
+   	 }
  // get data from server and update field map
     private void updateglobalMap(JSONArray data) {
 
@@ -514,6 +522,9 @@ private void JackPotDestinations(Coord potofluck) {
        
         return returnList;
     }
+    
+    
+   
    
     // sends a SCAN request to the server and puts the result in the scanMap array
         public void doScan() throws IOException {
@@ -574,6 +585,16 @@ private void JackPotDestinations(Coord potofluck) {
         return null;
     }
 
+    
+    public Boolean reachedTargetLoc(Coord c, Coord t) 
+    {
+    	if(t!=null)
+    		if(t.xpos==c.xpos && t.ypos==c.ypos)
+    			return true;
+    	return false;
+    	
+    } 
+    
     private void clearReadLineBuffer() throws IOException{
         while(in.ready()){
             //System.out.println("ROVER_04 clearing readLine()");
