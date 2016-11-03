@@ -53,7 +53,7 @@ public class ROVER_04 {
     List<Coord> visited =new ArrayList<Coord>();
     List<Coord> pLocationList =new ArrayList<Coord>();
     int pLocationListCount=0,pLocationListSize=7;
-    ROVER_04 rover = new ROVER_04();
+    //ROVER_04 rover = new ROVER_04();
    
     boolean goingSouth = false,traverseJackpot=Boolean.FALSE;
     boolean goingEast = false;
@@ -286,7 +286,7 @@ public class ROVER_04 {
                     }
                 }
                 else {
-                	List<String> positions = logicA.Astar(cLoc, destination, scanMapTiles, RoverDriveType.WALKER, globalMap);
+                	List<String> positions = logicA.Astar(cLoc, tLoc, scanMapTiles, RoverDriveType.WALKER, globalMap);
                     
                     //System.out.println(rovername + " moves: " + positions.toString());
                     
