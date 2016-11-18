@@ -144,6 +144,44 @@ public class Communication {
 
         return parseResponseStr(responseStr);
     }
+    
+ // for requesting resource map
+    public JSONArray getResourceMap() {
+
+        URL obj = null;
+        String responseStr = "";
+        try {
+            obj = new URL(url + "/science/all");
+            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+            con.setRequestProperty("Rover-Name", rovername);
+            con.setRequestProperty("Corp-Secret", corp_secret);
+            con.setRequestMethod("GET");
+
+            int responseCode = con.getResponseCode();
+            System.out.println("\nSending 'GET' request to URL : " + url);
+            System.out.println("Response Code : " + responseCode);
+
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(con.getInputStream()));
+            String inputLine;
+            StringBuffer response = new StringBuffer();
+
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+
+            responseStr = response.toString();
+
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return parseResponseStr(responseStr);
+    }
 
     public JSONArray parseResponseStr(String response) {
         JSONArray data = null;

@@ -34,9 +34,10 @@ import org.json.simple.JSONObject;
  * http://cs.lmu.edu/~ray/notes/javanetexamples/ Many thanks to the authors for
  * publishing their code examples
  */
-//This Rover was learned and implemented using ROVER11 as an sample, For the implementation of A* was already available 
+//This Rover was learned and implemented using ROVER11 & ROVER15 as an sample, For the implementation of A* was already available 
 //at Search logic provided by our professor so understood the working of search logic & A* implemented as needed 
-//using internet and previous work done by some ppl on github as sample
+//using internet and previous work done by some ppl on github as sample. And Communication was Established using Rover15 to collect 
+//to collect science as per input from Comm Server.
 public class ROVER_04 {
 	// DemoMidterm
 
@@ -177,9 +178,19 @@ public class ROVER_04 {
           long startTime;
           long estimatedTime;
           long sleepTime2;
-
-          // Get destinations from Sensor group. I am a driller!
+          
+        // communicationWithJSON
+  		// getting data from the globalMap. go in the following URL which is
+  		// <serverip>:3000/api/ to see the api instructions created by Sam
+  		// we get data through <serverip>:3000/api/science/drill
+        // Shows locations of sciences possible for driller 
+  		// if you go and check in communication class's getResourceMap() function,
+ 
+        // Get destinations from Sensor group. I am a driller!
           List<Coord> Obstacleblock = new ArrayList<>();
+          		// currently the requirements allow sensor calls to be made with no
+       			// simulated resource cost
+       			JSONArray drillJSONData = com.getResourceMap();
 
           //destinations.add(tLoc);
           //TODO: implement   target location 
@@ -233,7 +244,25 @@ public class ROVER_04 {
 
                 }
                 trafficCounter++;
-               
+                // getting JSON data from communication server
+    			// communicationWithJSON
+    			for (Object o : drillJSONData) {
+    				JSONObject jsonObject = (JSONObject) o;
+    				int x = (int) (long) jsonObject.get("x");
+    				int y = (int) (long) jsonObject.get("y");
+    				Coord coord = new Coord(x, y);
+    				// if target queue is empty or target queue already has the
+    				// coordinate
+    				String terrain = jsonObject.get("terrain").toString();
+    				boolean gathered = false;
+    				if (jsonObject.get("g") != null) {
+    					gathered = true;
+    				}
+    				if (!terrain.equals("SAND") && !dests.contains(coord) && !gathered) {
+    					dests.add(coord);
+    				}
+    			}
+    			// Communication part ends :)
                
                 // ***** get TIMER remaining *****
                 out.println("TIMER");
@@ -291,7 +320,7 @@ public class ROVER_04 {
                 else {
                 	List<String> positions = logicA.Astar(cLoc, destination, scanMapTiles, RoverDriveType.WALKER, globalMap);
                     
-                    System.out.println(rovername + " moves: " + positions.toString());
+                    //System.out.println(rovername + " moves: " + positions.toString());
                     
                     System.out.println(rovername + "currentLoc: " + cLoc + ", destination: " + destination);
 
