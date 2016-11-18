@@ -216,6 +216,11 @@ public class ROVER_04 {
                 int centerIndex = (scanMap.getEdgeSize() - 1)/2;
                 updateglobalMap(cLoc, scanMapTiles);
                 System.out.println("post message: " + com.postScanMapTiles(cLoc, scanMapTiles));
+//                System.out.println("qwertyuiop[");
+//                if (scanMapTiles[centerIndex][centerIndex].getScience() != Science.NONE){
+//            	out.println("GATHER"); 
+//                Thread.sleep(5000);
+//              }
                 if (trafficCounter % 5 == 0) {
                     updateglobalMap(com.getGlobalMap());
                  // ********* get closest destination from current location everytime
@@ -223,6 +228,7 @@ public class ROVER_04 {
                         //destination = getClosestDestination(cLoc);
                         destination = getdynamicloc(cLoc);
                         com.postScanMapTiles(cLoc, scanMapTiles);
+                   
                     }
 
                 }
@@ -259,14 +265,20 @@ public class ROVER_04 {
                 }
                 if (logicA.targetVisible(cLoc, tLoc)) 
                 {
+                	 out.println("GATHER");
                     if (!beenToJackpot)
                     {
                         beenToJackpot = true;
                         JackPotDestinations(tLoc);
                     }
                 }
-             else {
- }
+                
+                
+                
+               
+        		
+//             else {
+// }
                 // IMPLEMENT A* ALG to make the rover move fast and short path
                 if (destination == null) // no destination
                 {
@@ -274,17 +286,19 @@ public class ROVER_04 {
                     {
                         destination = getClosestDestination(cLoc);
                     }
+                    out.println("GATHER");
                 }
                 else {
                 	List<String> positions = logicA.Astar(cLoc, destination, scanMapTiles, RoverDriveType.WALKER, globalMap);
                     
-                    //System.out.println(rovername + " moves: " + positions.toString());
+                    System.out.println(rovername + " moves: " + positions.toString());
                     
                     System.out.println(rovername + "currentLoc: " + cLoc + ", destination: " + destination);
 
-                
+                    out.println("GATHER"); 
                 if (!positions.isEmpty())
                 {
+                	
                     out.println("MOVE " + positions.get(0));
                     // if rover is next to the target it uses greedy algo
                     if (logicA.targetVisible(cLoc, destination)) 
@@ -308,7 +322,7 @@ public class ROVER_04 {
                
                 else { // Reached Destination
                 	if (cLoc.equals(destination))
-                	{
+                	{ out.println("GATHER");
                 		System.out.println("Verifying Destination!!!!");
                 		//Verify Destination
                         if (!dests.isEmpty())
@@ -336,7 +350,7 @@ public class ROVER_04 {
                 estimatedTime = System.nanoTime() - startTime;
                 sleepTime2 = walkerDelay - TimeUnit.NANOSECONDS.toMillis(estimatedTime);
                 if (sleepTime2 > 0) {
-                	Thread.sleep(sleepTime2);}
+                	Thread.sleep(sleepTime);}
                 System.out.println(rovername +" ------------ bottom process control --------------");
             }
        
